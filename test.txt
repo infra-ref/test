@@ -178,3 +178,22 @@ for idx, source_body in enumerate(sources, start=1):
 如果你确认新集群依旧要用带 """ 的“非标准”脚本，那就无法用 Python 自带的 JSON 库去解析并再 json.dumps()；只好做“文本级拆分+原样提交”。上面示例的“括号匹配”方法，可以把 _source 块完整提取出来，再直接用 requests 做 POST。
 如果新集群其实想要的是合法 JSON（多数时候是这样），那么你就不能原封不动地提交这个带 """ 的字符串；你得在 Python 里做一次正则/替换，把多行换行符改成 \n，把 """ 改成 \"\"\" 或者直接把脚本正文再包成合法 JSON。然后 requests.post(..., json=fixed_source) 才能成功。
 鉴于你描述“必须保留空行和三重引号才能导入成功”，那就只能使用文本操作的方式来拆分——根本不要走标准 JSON 的解析，把提取出来的 _source 文本直接提交给新集群即可。这样既绕过了 Python 的 JSON 解析报错，也能保留原来的多行格式。祝你迁移顺利！
+
+
+
+在 VSCode 里，你可以使用正则表达式查找并替换，只针对 message_template.source 里面的 多行字符串中的换行符 替换为 \n，不影响 JSON 结构。
+
+步骤
+打开 VSCode，按下 Ctrl + F （或 Cmd + F on Mac），然后点击 “正则表达式” 按钮（.*） 启用正则模式。
+输入查找正则：
+regex
+复制
+编辑
+(?<=message_template": \{\s*"source":\s*""")[^"]+?(?=""")
+这个正则匹配 message_template.source 三重引号内的字符串内容，但不包括外层的 """。
+在“替换”框输入：
+regex
+复制
+编辑
+${0//\n/\\n}
+这会将 匹配内容中的换行符 替换成 \n。
